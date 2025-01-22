@@ -15,13 +15,23 @@ const getChatbotResponse = (message) => {
   return chatbotResponses[lowerCaseMessage] || chatbotResponses.default;
 };
 
+// Verificar se o horário está dentro do intervalo especificado
+const isNightTime = () => {
+  const now = new Date();
+  const hour = now.getHours();
+  const minutes = now.getMinutes();
+
+  // Período da noite: das 20:00 às 06:30
+  const isNight = hour >= 20 || hour < 6 || (hour === 6 && minutes < 30);
+  return isNight;
+};
+
 // Iniciar o bot
 venom
   .create({
-    session: "meu-bot-session", // Nome da sessão
+    session: "meu-bot-session",
     multidevice: true, // Suporte a múltiplos dispositivos
-    browserArgs: ["--no-sandbox"], // Argumentos para evitar problemas de permissões
-    executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" // Caminho do executável do Chrome
+    browserArgs: ["--no-sandbox", "--disable-setuid-sandbox"] // Configurações para evitar problemas em servidores
   })
   .then((client) => start(client))
   .catch((error) => console.error("Erro ao iniciar o bot:", error));
@@ -29,8 +39,15 @@ venom
 function start(client) {
   client.onMessage(async (message) => {
     if (!message.isGroupMsg) {
-      // Ignorar mensagens de grupos
-      await client.sendText(message.from, `Você disse: ${message.body}`);
+      // Lógica baseada no horário
+      if (isNightTime()) {
+        // Resposta durante a noite
+        await client.sendText(message.from, `Você disse: ${message.body}`);
+      } else {
+        // Resposta durante o dia com lógica adicional
+        const response = getChatbotResponse(message.body);
+        await client.sendText(message.from, response);
+      }
     }
   });
 }
